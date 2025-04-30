@@ -23,6 +23,7 @@ bucket_name = st.secrets["aws"]["S3_BUCKET"]
 # Submission logic
 if st.button("Check In"):
 if da_name and workflow:
+  
 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 csv_line = f"{da_name},{workflow},{timestamp}\n"
 object_key = f"logs/{da_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
