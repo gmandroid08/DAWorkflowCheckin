@@ -3,6 +3,7 @@ import boto3
 import pandas as pd
 from datetime import datetime
 import io
+from botocore.exceptions import ClientError  # Make sure this is at top level
 
 # Page setup
 st.set_page_config(page_title="DA Workflow Check-In", layout="centered")
@@ -22,7 +23,7 @@ s3 = boto3.client(
 )
 
 bucket_name = st.secrets["aws"]["S3_BUCKET"]
-object_key = "logs/final_clean_checkin_log.csv"  # Static file path for consistent access
+object_key = "logs/final_clean_checkin_log.csv"  #  Always write to this file
 
 # Upload logic
 if st.button("Check In"):
@@ -30,20 +31,17 @@ if st.button("Check In"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_entry = pd.DataFrame([[da_name, workflow, timestamp]], columns=["DA Name", "Workflow", "Timestamp"])
 
-      from botocore.exceptions import ClientError
-
-try:
-    # Try to fetch existing file from S3
-    response = s3.get_object(Bucket=bucket_name, Key=object_key)
-    existing_data = pd.read_csv(io.BytesIO(response['Body'].read()))
-    combined_data = pd.concat([existing_data, new_entry], ignore_index=True)
-except ClientError as e:
-    if e.response['Error']['Code'] == 'NoSuchKey':
-        # File doesn't exist yet — create a new log
-        combined_data = new_entry
-    else:
-        raise e  # Raise any other unexpected error
-
+        try:
+            # Try to fetch the existing file from S3
+            response = s3.get_object(Bucket=bucket_name, Key=object_key)
+            existing_data = pd.read_csv(io.BytesIO(response['Body'].read()))
+            combined_data = pd.concat([existing_data, new_entry], ignore_index=True)
+        except ClientError as e:
+            if e.response['Error']['Code'] == 'NoSuchKey':
+                # File doesn't exist yet — start new log
+                combined_data = new_entry
+            else:
+                raise e  # Re-raise unexpected errors
 
         # Save updated CSV back to S3
         csv_buffer = io.StringIO()
