@@ -15,8 +15,8 @@ workflow = st.selectbox("Select your current workflow:", [
 # Initialize S3 client from Streamlit secrets
 s3 = boto3.client(
     "s3",
-    aws_access_key_id=st.secrets["aws"]["AWS_ACCESS_KEY_ID"],
-    aws_secret_access_key=st.secrets["aws"]["AWS_SECRET_ACCESS_KEY"]
+    aws_access_key_id=st.secrets["aws"]["AKIAQQ6R5IZLJDK2FTMF"],
+    aws_secret_access_key=st.secrets["aws"]["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"]
 )
 bucket_name = st.secrets["aws"]["S3_BUCKET"]
 
