@@ -30,14 +30,20 @@ if st.button("Check In"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         new_entry = pd.DataFrame([[da_name, workflow, timestamp]], columns=["DA Name", "Workflow", "Timestamp"])
 
-        try:
-            # Try to fetch existing file from S3
-            response = s3.get_object(Bucket=bucket_name, Key=object_key)
-            existing_data = pd.read_csv(io.BytesIO(response['Body'].read()))
-            combined_data = pd.concat([existing_data, new_entry], ignore_index=True)
-        except s3.exceptions.NoSuchKey:
-            # If file doesn't exist, create new one
-            combined_data = new_entry
+      from botocore.exceptions import ClientError
+
+try:
+    # Try to fetch existing file from S3
+    response = s3.get_object(Bucket=bucket_name, Key=object_key)
+    existing_data = pd.read_csv(io.BytesIO(response['Body'].read()))
+    combined_data = pd.concat([existing_data, new_entry], ignore_index=True)
+except ClientError as e:
+    if e.response['Error']['Code'] == 'NoSuchKey':
+        # File doesn't exist yet — create a new log
+        combined_data = new_entry
+    else:
+        raise e  # Raise any other unexpected error
+
 
         # Save updated CSV back to S3
         csv_buffer = io.StringIO()
